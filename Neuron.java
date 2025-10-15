@@ -9,12 +9,29 @@ public class Neuron {
     double bias;
     int layer;
 
-    public Neuron (int weight_size) {
+    public Neuron (int L) {
         Random random = new Random();
-        // weight number determined by network
-            this.weightMatrix = new double[weight_size];
-            this.bias = random.nextDouble(-1, 1);
+        this.layer = L;
 
+        // 4 weights from first to second layer, bias
+        if (L == 1) {
+            this.weightMatrix = new double[] {
+                    random.nextDouble(-1, 1),
+                    random.nextDouble(-1, 1),
+                    random.nextDouble(-1, 1),
+                    random.nextDouble(-1, 1)
+            };
+            this.bias = random.nextDouble(-1, 1);
+        }
+        // 3 weights from second to third layer, bias
+        else if (L == 2) {
+            this.weightMatrix = new double[] {
+                    random.nextDouble(-1, 1),
+                    random.nextDouble(-1, 1),
+                    random.nextDouble(-1, 1)
+            };
+            this.bias = random.nextDouble(-1, 1);
+        }
     }
 
     // Manually set a neuron's weight vector

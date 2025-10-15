@@ -19,7 +19,7 @@ public class Network {
         this.hidden_size = hidden_size;
         this.output_size = output_size;
 
-        // Fill network with neurons and instantiate random weights / biases
+        // Fill network with neurons
         int neuron_index = 0;
         // Input neurons
         for (int i = 0; i < input_size; i++) {
@@ -28,22 +28,14 @@ public class Network {
         }
         // Number of hidden layers is index 0, number of neurons per layer index 1
         for (int i = 0; i < hidden_size[0]; i++) {
-            // If not first hidden layer, hidden_size number of weights
-            if (hidden_size[0] != 1 && i > 0) {
-                for (int j = 0; j < hidden_size[1]; j++) {
-                    this.network[neuron_index] = new Neuron(hidden_size[1]);
-                    neuron_index++;
-                }
-            }
-            // First hidden layer has inputs number of weights
-            else for (int j = 0; j < hidden_size[1]; j++) {
-                this.network[neuron_index] = new Neuron(input_size);
+            for (int j = 0; j < hidden_size[1]; j++) {
+                this.network[neuron_index] = new Neuron(1);
                 neuron_index++;
             }
         }
         // Output neurons
         for (int i = 0; i < output_size; i++) {
-            this.network[neuron_index] = new Neuron(hidden_size[1]);
+            this.network[neuron_index] = new Neuron(2);
             neuron_index++;
         }
     }

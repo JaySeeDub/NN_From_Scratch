@@ -70,6 +70,9 @@ public class Network {
             for (int batch = 0; batch < inputs.length; batch++) {
                 System.out.println("--------------- Batch (" + (batch+1) + ") ---------------");
 
+
+                // BUILD THIS OUT TO HANDLE ARBITRARY NUMBER OF BATCHES INSTEAD OF 2
+
                 double[][][] GradVector1 = computeError(inputs[batch][0], y[batch][0]);
                 double[][][] GradVector2 = computeError(inputs[batch][1], y[batch][1]);
 
@@ -88,7 +91,6 @@ public class Network {
                     }
                 }
 
-                System.out.println("Grad Vector in Training ============ " + Arrays.deepToString(GradVector));
                 // backprop takes BiasGrad, WeightGrad, and lr
                 backprop(GradVector[0], GradVector[1], eta);
             }
@@ -117,11 +119,6 @@ public class Network {
             outputs[2][i] = this.network[neuron_index].input(outputs[1]);
             neuron_index++;
         }
-
-        System.out.println("\n================ Forward Pass ====================");
-        System.out.println("\nInput: " + Arrays.toString(outputs[0]));
-        System.out.println("Hidden Layer Output: " + Arrays.toString(outputs[1]));
-        System.out.println("Final Layer Output: " + Arrays.toString(outputs[2]));
         return outputs;
     }
 
@@ -130,21 +127,10 @@ public class Network {
         // Modifies the weights and biases of each neuron by the given Grad vectors
 
         for (int i = 0; i < this.network.length; i++) {
-            System.out.println("\n==================================================================");
-            System.out.println("Neuron " + i + ": ");
-
-            System.out.println("Initial Bias: " + this.network[i].bias);
-            System.out.println("Initial Weights: " + Arrays.toString(this.network[i].weightMatrix));
-
-            System.out.println("BiasGrad: " + Arrays.deepToString(biasGrad));
-            System.out.println("WeightGrad: " + Arrays.deepToString(weightGrad));
-
             this.network[i].bias -= eta*biasGrad[i][0];
             for (int j = 0; j < this.network[i].weightMatrix.length; j++) {
                 this.network[i].weightMatrix[j] -= eta * weightGrad[i][j];
             }
-            System.out.println("Modified Bias: " + this.network[i].bias);
-            System.out.println("Modified Weights: " + Arrays.toString(this.network[i].weightMatrix));
         }
     }
 
@@ -182,16 +168,6 @@ public class Network {
         // GradVectorHidden = {biasGrad, weightGrad} for hidden layers
 
         double[][][] GradVectorHidden = this.hiddenError(outputs[1], outputs[0], weights, GradVectorL[0]);
-
-
-        System.out.println("\n============ Compute Errors ==============");
-        System.out.println("\nFinal Layer Gradient");
-        System.out.println("Bias: " + Arrays.deepToString(GradVectorL[0]));
-        System.out.println("Weight: " + Arrays.deepToString(GradVectorL[1]));
-
-        System.out.println("\nHidden Layer Gradient");
-        System.out.println("Bias: " + Arrays.deepToString(GradVectorHidden[0]));
-        System.out.println("Weight: " + Arrays.deepToString(GradVectorHidden[1]));
 
         // Now combine those errors into one vector of all gradient values
         // Input Layer

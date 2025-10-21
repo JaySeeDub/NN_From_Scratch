@@ -17,13 +17,13 @@ public class TestNetwork {
 
         Network net = new Network(inputSize, hiddenSize, outputSize);
 
-        // Read commands from the user
-        Scanner inputScanner = new Scanner(System.in);
-        String command = " ";
-
         // Load and process test data from csv
         String train_path = System.getProperty("user.home") + "\\IdeaProjects\\NeuralNetwork\\src\\Data\\mnist_train.csv";
         String test_path = System.getProperty("user.home") + "\\IdeaProjects\\NeuralNetwork\\src\\Data\\mnist_test.csv";
+
+        // Read commands from the user
+        Scanner inputScanner = new Scanner(System.in);
+        String command = " ";
 
         System.out.println("\nSet csv data paths? [y/n]");
         command = inputScanner.nextLine();
@@ -39,8 +39,8 @@ public class TestNetwork {
         System.out.println("Loading test data from " + test_path + " ...");
 
         // Data normalized, shuffled, and split into minibatches
-        Helper.MNISTLoader.MNISTData train_data = Helper.MNISTLoader.loadMNIST(train_path, 60000, 30);
-        Helper.MNISTLoader.MNISTData test_data = Helper.MNISTLoader.loadMNIST(test_path, 10000, 30);
+        Helper.MNISTLoader.MNISTData train_data = Helper.MNISTLoader.loadMNIST(train_path, 60000, 10);
+        Helper.MNISTLoader.MNISTData test_data = Helper.MNISTLoader.loadMNIST(test_path, 10000, 10);
 
 
         boolean trained = false;

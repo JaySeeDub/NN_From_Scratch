@@ -4,8 +4,9 @@
 // Part 2 of building a neural net from scratch. Added interactive network options and functionality
 // to train digit recognition on the MNIST dataset
 
-import java.util.Arrays;
+import java.io.IOException;
 import java.util.Objects;
+import java.util.Random;
 import java.util.Scanner;
 
 public class Network {
@@ -27,6 +28,12 @@ public class Network {
             this.network[neuron_index] = new Neuron(0);
             neuron_index++;
         }
+
+//        // Simplified version for just one hidden layer
+//        for (int j = 0; j < hidden_size[1]; j++) {
+//            this.network[neuron_index++] = new Neuron(input_size);
+//        }
+
         // Number of hidden layers is index 0, number of neurons per layer index 1
         for (int i = 0; i < hidden_size[0]; i++) {
             // If not first hidden layer, hidden_size number of weights
@@ -63,40 +70,66 @@ public class Network {
         }
     }
 
-    public void train(double[][][] inputs, double[][][] y, double eta, int epochs) {
+    public void train(double[][][] inputs, double[][][] y, double eta, int epochs) throws IOException {
         // Takes inputs as [mini_batch][Sample][Inputs]
         // y as [minibatch][Sample][Outputs]
+        double best_accuracy = 0.0;
+        int count = 0;
+        Random random = new Random();
+
         for (int epoch = 1; epoch <= epochs; epoch++) {
             System.out.println("--------------- Epoch (" + epoch + ") ---------------");
 
             // Have to build the dimensions of GradVector to handle the different bias, weight shapes
             double[][][] GradVectorTemp = computeError(inputs[0][0], y[0][0]);
-            double[][][] GradVector = new double[GradVectorTemp.length][][];
-
-            // initialize with all zeros
-            for (int i = 0; i < GradVectorTemp.length; i++) {
-                GradVector[i] = new double[GradVectorTemp[i].length][];
-                for (int j = 0; j < GradVectorTemp[i].length; j++) {
-                    GradVector[i][j] = new double[GradVectorTemp[i][j].length];
-                }
-            }
 
             // Loop over all batches and average the Gradients
+            // For each batch
             for (int batch = 0; batch < inputs.length; batch++) {
-                GradVectorTemp = computeError(inputs[batch][0], y[batch][0]);
+
+                // Initialize an empty GradVector for each batch
+                double[][][] GradVector = new double[GradVectorTemp.length][][];
                 for (int i = 0; i < GradVectorTemp.length; i++) {
+                    GradVector[i] = new double[GradVectorTemp[i].length][];
                     for (int j = 0; j < GradVectorTemp[i].length; j++) {
-                        for (int k = 0; k < GradVectorTemp[i][j].length; k++) {
-                            GradVector[i][j][k] += GradVectorTemp[i][j][k] / inputs.length;
+                        GradVector[i][j] = new double[GradVectorTemp[i][j].length];
+                    }
+                }
+                // The real loop...
+                // For each image in each batch
+                for (int image = 0; image < inputs[batch].length; image++) {
+
+                    // Calculate the error on that image
+                    GradVectorTemp = computeError(inputs[batch][image], y[batch][image]);
+
+                    // For each entry in the single image GradVector
+                    for (int i = 0; i < GradVectorTemp.length; i++) {
+                        for (int j = 0; j < GradVectorTemp[i].length; j++) {
+                            for (int k = 0; k < GradVectorTemp[i][j].length; k++) {
+                                // For each weight, bias, add the error on that image to the total GradVector, divided by the batch size
+                                GradVector[i][j][k] += GradVectorTemp[i][j][k] / inputs[batch].length;
+                            }
                         }
                     }
                 }
+                // Each epoch, backprop takes BiasGrad, WeightGrad, and lr
+                backprop(GradVector[0], GradVector[1], eta);
+//                System.out.println(Arrays.deepToString(GradVector[0]));
+//                System.out.println(Arrays.deepToString(GradVector[1]));
             }
-            // backprop takes BiasGrad, WeightGrad, and lr
-            backprop(GradVector[0], GradVector[1], eta);
-
             // Print results from a forward pass on the training data, false means no displayed images
-            testNetwork(inputs, y, false, false);
+            double accuracy = testNetwork(inputs, y, false, false);
+            if (accuracy > best_accuracy+ 0.3) {
+                count = 0;
+                String save_path = String.format("best_accuracy_%.3f.csv", accuracy);
+                Helper.saveNetwork(this, save_path);
+                System.out.println("Model Saved to " + save_path);
+            }
+            count++;
+            if (count % 5 == 0) {
+                eta *= random.nextDouble(0.6,1.25);
+                System.out.println("\n New Learning Rate: " + eta);
+            }
         }
     }
 
@@ -172,11 +205,6 @@ public class Network {
         // GradVectorHidden = {biasGrad, weightGrad} for hidden layers
         double[][][] GradVectorHidden = this.hiddenError(outputs[1], outputs[0], weights, GradVectorL[0]);
 
-//        System.out.println("Outputs 1: " + Arrays.toString(outputs[1]));
-//        System.out.println("Outputs 0: " + Arrays.toString(outputs[0]));
-//        System.out.println("weights: " + Arrays.deepToString(weights));
-//        System.out.println("GradVector: " + Arrays.deepToString(GradVectorL[0]));
-
         // Now combine those errors into one vector of all gradient values
         // Input Layer
         int index = 0;
@@ -245,7 +273,7 @@ public class Network {
         return out;
     }
 
-    public void testNetwork(double[][][] inputs, double[][][] labels, Boolean display, Boolean misclassified) {
+    public double testNetwork(double[][][] inputs, double[][][] labels, Boolean display, Boolean misclassified) {
         int[] digit_count = new int[10];
         int[] correct_count = new int[10];
         String command = "";
@@ -333,5 +361,6 @@ public class Network {
         }
         double percent = (100.0 * totalCorrect / totalDigits);
         System.out.println("\nTotal Accuracy:  " + totalCorrect + "/" + totalDigits + " = " + String.format("%.3f",percent));
+        return percent;
     }
 }

@@ -1,5 +1,6 @@
 // Simple neuron object to fill a neural network
 
+import java.util.Arrays;
 import java.util.Random;
 
 public class Neuron {
@@ -13,8 +14,12 @@ public class Neuron {
         Random random = new Random();
         // weight number determined by network
             this.weightMatrix = new double[weight_size];
+            int i = 0;
+            for (Double weight:this.weightMatrix) {
+                this.weightMatrix[i] = random.nextDouble(-1, 1);
+                i++;
+            };
             this.bias = random.nextDouble(-1, 1);
-
     }
 
     // Manually set a neuron's weight vector

@@ -1,11 +1,12 @@
 // Jesse Webb; CWID: 103-94-561
-// 10/13/25
-// Assignment 2.1
-// Part 1 of building a neural net from scratch. Implements sigmoid neurons in a fully connected network
-// with backpropagation and gradient descent on the simple test data of binary one hot vectors.
-// Target output is just the flipped vector.
+// 10/21/25
+// Assignment 2.2
+// Part 2 of building a neural net from scratch. Added interactive network options and functionality
+// to train digit recognition on the MNIST dataset
 
 import java.util.Arrays;
+import java.util.Objects;
+import java.util.Scanner;
 
 public class Network {
     Neuron[] network;
@@ -67,33 +68,35 @@ public class Network {
         // y as [minibatch][Sample][Outputs]
         for (int epoch = 1; epoch <= epochs; epoch++) {
             System.out.println("--------------- Epoch (" + epoch + ") ---------------");
+
+            // Have to build the dimensions of GradVector to handle the different bias, weight shapes
+            double[][][] GradVectorTemp = computeError(inputs[0][0], y[0][0]);
+            double[][][] GradVector = new double[GradVectorTemp.length][][];
+
+            // initialize with all zeros
+            for (int i = 0; i < GradVectorTemp.length; i++) {
+                GradVector[i] = new double[GradVectorTemp[i].length][];
+                for (int j = 0; j < GradVectorTemp[i].length; j++) {
+                    GradVector[i][j] = new double[GradVectorTemp[i][j].length];
+                }
+            }
+
+            // Loop over all batches and average the Gradients
             for (int batch = 0; batch < inputs.length; batch++) {
-                System.out.println("--------------- Batch (" + (batch+1) + ") ---------------");
-
-
-                // BUILD THIS OUT TO HANDLE ARBITRARY NUMBER OF BATCHES INSTEAD OF 2
-
-                double[][][] GradVector1 = computeError(inputs[batch][0], y[batch][0]);
-                double[][][] GradVector2 = computeError(inputs[batch][1], y[batch][1]);
-
-                // Have to build the dimensions of GradVector to handle the different bias, weight shapes
-                double[][][] GradVector = new double[GradVector1.length][][];
-
-                for (int i = 0; i < GradVector1.length; i++) {
-                    GradVector[i] = new double[GradVector1[i].length][];
-                    for (int j = 0; j < GradVector1[i].length; j++) {
-                        GradVector[i][j] = new double[GradVector1[i][j].length];
-
-                        // And compute the average of each element
-                        for (int k = 0; k < GradVector1[i][j].length; k++) {
-                            GradVector[i][j][k] = (GradVector1[i][j][k] + GradVector2[i][j][k]) / 2.0;
+                GradVectorTemp = computeError(inputs[batch][0], y[batch][0]);
+                for (int i = 0; i < GradVectorTemp.length; i++) {
+                    for (int j = 0; j < GradVectorTemp[i].length; j++) {
+                        for (int k = 0; k < GradVectorTemp[i][j].length; k++) {
+                            GradVector[i][j][k] += GradVectorTemp[i][j][k] / inputs.length;
                         }
                     }
                 }
-
-                // backprop takes BiasGrad, WeightGrad, and lr
-                backprop(GradVector[0], GradVector[1], eta);
             }
+            // backprop takes BiasGrad, WeightGrad, and lr
+            backprop(GradVector[0], GradVector[1], eta);
+
+            // Print results from a forward pass on the training data, false means no displayed images
+            testNetwork(inputs, y, false, false);
         }
     }
 
@@ -137,11 +140,13 @@ public class Network {
     public double [][][] computeError(double[] inputs, double[] y) {
         // Takes inputs, expected outputs, and network
         // Calls on hiddenError and outputError to generate GradVector for the whole network
+
         double[][][] GradVector = new double[2][this.network.length][];
+
         // Collect all network weights[neuron][weight_vector]
-        //
         double[][] weights = new double[this.network.length][];
         int neuron_index = 0;
+
         // Input Layer
         for (int i = 0; i < input_size; i++) {
             weights[neuron_index] = this.network[neuron_index].weightMatrix;
@@ -159,15 +164,18 @@ public class Network {
             weights[neuron_index] = this.network[neuron_index].weightMatrix;
             neuron_index++;
         }
-
         // Now use those weights to calculate errors
         //
         double[][] outputs = this.forward(inputs);
         // GradVectorL = {biasGrad, weightGrad} for output layer
         double[][][] GradVectorL = this.outputError(outputs[2], outputs[1], y);
         // GradVectorHidden = {biasGrad, weightGrad} for hidden layers
-
         double[][][] GradVectorHidden = this.hiddenError(outputs[1], outputs[0], weights, GradVectorL[0]);
+
+//        System.out.println("Outputs 1: " + Arrays.toString(outputs[1]));
+//        System.out.println("Outputs 0: " + Arrays.toString(outputs[0]));
+//        System.out.println("weights: " + Arrays.deepToString(weights));
+//        System.out.println("GradVector: " + Arrays.deepToString(GradVectorL[0]));
 
         // Now combine those errors into one vector of all gradient values
         // Input Layer
@@ -223,7 +231,7 @@ public class Network {
             // For each output neuron,
             for (int j = 0; j < deltaNext.length; j++) {
                 // Get that output neuron's error * its ith weight and add to sum
-                sum += deltaNext[j][0] * weights[input_size+hidden_size[1]+j][i];
+                sum += deltaNext[j][0] * weights[input_size + hidden_size[0] * hidden_size[1] + j][i];
             }
             // Error equation for each neuron (BiasGradient) populates the ith neuron's biasGrad
             biasGrad[i][0] = sum * a[i] * (1 - a[i]);
@@ -235,5 +243,95 @@ public class Network {
         }
         double [][][] out = new double[][][] {biasGrad, weightGrad};
         return out;
+    }
+
+    public void testNetwork(double[][][] inputs, double[][][] labels, Boolean display, Boolean misclassified) {
+        int[] digit_count = new int[10];
+        int[] correct_count = new int[10];
+        String command = "";
+
+        // Iterate through each image in each batch of the dataset
+        for (int batch = 0; batch < inputs.length; batch++) {
+            int i = 0;
+            for (double[] image : inputs[batch]) {
+                // For each image, get the true digit label
+                double[] label_vector = labels[batch][i];
+                int true_label = 0;
+                for (int j = 0; j < label_vector.length; j++) {
+                    if (label_vector[j] == 1.0) {
+                        true_label = j;
+                        break;
+                    }
+                }
+                // Count the true digit label
+                digit_count[true_label]++;
+
+                // Return all neuron outputs on that image
+                double[][] outputs = forward(image);
+                // Get the output layer
+                double[] preds = outputs[2];
+
+                // Get the most confident digit prediction
+                double conf = 0;
+                int pred_label = 0;
+                for (int j = 0; j < preds.length; j++) {
+                    if (preds[j] > conf) {
+                        conf = preds[j];
+                        pred_label = j;
+                    }
+                }
+                // If correct prediction, add correct count to that digit
+                if (pred_label == true_label) {
+                    correct_count[pred_label]++;
+                }
+                // If incorrect prediction and display mode, show each incorrect image
+                else if (display && misclassified) {
+                    i++;
+                    // If display mode, initialize a scanner
+                    Scanner inputScanner = new Scanner(System.in);
+
+                    System.out.println("Misclassified Image " + i + ":  \n");
+                    Helper.showAscii(image);
+                    System.out.println("Predicted: " + pred_label + "  ;  Actual: " + true_label);
+                    System.out.println("\nContinue? [y/n]");
+                    command = inputScanner.nextLine();
+
+                    if (Objects.equals(command, "n")) {
+                        break;
+                    }
+                }
+                // In display mode, show each image, its label, its prediction, and give an option to break
+                if (display && !misclassified) {
+                    i++;
+                    // If display mode, initialize a scanner
+                    Scanner inputScanner = new Scanner(System.in);
+
+                    System.out.println("Image " + i + ":  \n");
+                    Helper.showAscii(image);
+                    System.out.println("Predicted: " + pred_label + "  ;  Actual: " + true_label);
+                    System.out.println("\nContinue? [y/n]");
+                    command = inputScanner.nextLine();
+                    }
+                if (Objects.equals(command, "n")) {
+                    break;
+                }
+            }
+            if (Objects.equals(command, "n")) {
+                break;
+            }
+        }
+
+        // Print out correct digit counts / total digit counts
+        System.out.println("=================== Accuracies ===================");
+        int totalCorrect = 0;
+        int totalDigits = 0;
+        for (int digit = 0; digit < 10; digit++) {
+            double acc = (100 * (double) correct_count[digit] /digit_count[digit]);
+            System.out.print(digit + ": " + correct_count[digit] + "/" + digit_count[digit] + " = " + String.format("%.3f",acc) + "  ;  ");
+            totalCorrect += correct_count[digit];
+            totalDigits += digit_count[digit];
+        }
+        double percent = (100.0 * totalCorrect / totalDigits);
+        System.out.println("\nTotal Accuracy:  " + totalCorrect + "/" + totalDigits + " = " + String.format("%.3f",percent));
     }
 }

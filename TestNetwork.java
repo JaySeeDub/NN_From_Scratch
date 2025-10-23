@@ -15,6 +15,9 @@ public class TestNetwork {
         int[] hiddenSize = {1, 30};
         int outputSize = 10;
 
+        // Track if [1] or [2] have been selected
+        boolean trained = false;
+
         Network net = new Network(inputSize, hiddenSize, outputSize);
 
         // Load and process test data from csv
@@ -23,7 +26,7 @@ public class TestNetwork {
 
         // Read commands from the user
         Scanner inputScanner = new Scanner(System.in);
-        String command = " ";
+        String command = "";
 
         System.out.println("\nSet csv data paths? [y/n]");
         command = inputScanner.nextLine();
@@ -39,11 +42,10 @@ public class TestNetwork {
         System.out.println("Loading test data from " + test_path + " ...");
 
         // Data normalized, shuffled, and split into minibatches
-        Helper.MNISTLoader.MNISTData train_data = Helper.MNISTLoader.loadMNIST(train_path, 60000, 10);
-        Helper.MNISTLoader.MNISTData test_data = Helper.MNISTLoader.loadMNIST(test_path, 10000, 10);
+        Helper.MNISTLoader.MNISTData train_data = Helper.MNISTLoader.loadMNIST(train_path, 60000);
+        Helper.MNISTLoader.MNISTData test_data = Helper.MNISTLoader.loadMNIST(test_path, 10000);
 
-
-        boolean trained = false;
+        // [0] leaves the program
         while (!Objects.equals(command, "0")) {
             // Select command
             System.out.println("\n [1] TRAIN | [2] LOAD NETWORK | [3] TRAINING ACCURACY | [4] TEST ACCURACY | [5] RUN TEST | [6] SHOW MISCLASSIFIED | [7] SAVE | [0] EXIT");
@@ -52,22 +54,25 @@ public class TestNetwork {
             System.out.println();
             // Training
             if (Objects.equals(command, "1")) {
-                double eta = 10.0;
-                int epochs = 1;
+//                double eta = 10.0;
+//                int epochs = 1;
 
                 System.out.println("Enter learning rate: ");
-                eta = inputScanner.nextDouble();
+                double eta = inputScanner.nextDouble();
                 System.out.println("Enter number of epochs: ");
-                epochs = inputScanner.nextInt();
+                int epochs = inputScanner.nextInt();
+                System.out.println("Enter batch size: ");
+                int batch_size = inputScanner.nextInt();
 
                 System.out.println("\n+++++++++++++++ Training ++++++++++++++++");
                 System.out.println();
 
-                net.train(train_data.images, train_data.labels, eta, epochs);
+                net.train(train_data.images, train_data.labels, eta, epochs, batch_size);
 
                 trained = true;
             }
 
+            // Load a network
             else if (Objects.equals(command, "2")) {
                 System.out.println("Enter load_path: ");
                 String load_path = inputScanner.nextLine();
@@ -77,6 +82,7 @@ public class TestNetwork {
                 trained = true;
             }
 
+            // Check network accuracy on train data
             else if (Objects.equals(command, "3")) {
                 if (trained) {
                     System.out.println("Displaying network accuracy on training data...\n");
@@ -87,6 +93,7 @@ public class TestNetwork {
                 }
             }
 
+            // Check network accuracy on test data
             else if (Objects.equals(command, "4")) {
                 if (trained) {
                     System.out.println("Displaying network accuracy on testing data...\n");
@@ -97,6 +104,7 @@ public class TestNetwork {
                 }
             }
 
+            // Display test data
             else if (Objects.equals(command, "5")) {
                 if (trained) {
                     System.out.println("Displaying testing images...\n");
@@ -107,6 +115,7 @@ public class TestNetwork {
                 }
             }
 
+            // Display misclassified test data
             else if (Objects.equals(command, "6")) {
                 if (trained) {
                     System.out.println("Displaying testing images...\n");
@@ -117,6 +126,7 @@ public class TestNetwork {
                 }
             }
 
+            // Save the model parameters
             else if (Objects.equals(command, "7")) {
                 if (trained) {
                     System.out.println("Enter save_path: ");

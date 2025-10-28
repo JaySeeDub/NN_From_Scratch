@@ -1,5 +1,6 @@
 // Test all functions of the network and train on test data
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -76,6 +77,7 @@ public class TestNetwork {
             else if (Objects.equals(command, "2")) {
                 System.out.println("Enter load_path: ");
                 String load_path = inputScanner.nextLine();
+
                 Helper.loadNetwork(net,load_path);
 
                 System.out.println("\nSuccessfully loaded network state from " + System.getProperty("user.dir") + "\\" + load_path + "!");

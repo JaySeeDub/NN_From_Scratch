@@ -39,7 +39,7 @@ public class Helper {
                 while ((line = br.readLine()) != null && count < numSamples) {
                     String[] values = line.split(delimiter);
 
-                    // Parse label
+                    // Get label
                     int label = Integer.parseInt(values[0]);
 
                     // One-hot encoding
@@ -85,10 +85,10 @@ public class Helper {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(path))) {
             bw.write(String.format("%d,%d,%d\n", net.input_size, net.hidden_size[0], net.output_size));
             for (int i = 0; i < net.network.length; i++) {
-                double b = net.network[i].bias;
-                bw.write(Double.toString(b));
-                for (double w : net.network[i].weightMatrix) {
-                    bw.write("," + Double.toString(w));
+                double bias = net.network[i].bias;
+                bw.write(Double.toString(bias));
+                for (double weight : net.network[i].weightMatrix) {
+                    bw.write("," + Double.toString(weight));
                 }
                 bw.write("\n");
             }
@@ -97,14 +97,15 @@ public class Helper {
     // load network weights into an existing network
     public static void loadNetwork(Network net, String path) throws IOException {
         try (BufferedReader br = new BufferedReader(new FileReader(path))) {
+            br.readLine();
             String line;
             int i = 0;
             while ((line = br.readLine()) != null && i < net.network.length) {
-                String[] tok = line.split(",");
-                net.network[i].bias = Double.parseDouble(tok[0]);
-                double[] w = new double[tok.length - 1];
-                for (int j = 1; j < tok.length; j++) w[j-1] = Double.parseDouble(tok[j]);
-                net.network[i].weightMatrix = w;
+                String[] content = line.split(",");
+                net.network[i].bias = Double.parseDouble(content[0]);
+                double[] weight = new double[content.length - 1];
+                for (int j = 1; j < content.length; j++) weight[j-1] = Double.parseDouble(content[j]);
+                net.network[i].weightMatrix = weight;
                 i++;
             }
         }
